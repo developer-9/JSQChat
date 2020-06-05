@@ -7,13 +7,34 @@
 //
 
 import UIKit
+import Firebase
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
+    var authListener: AuthStateDidChangeListenerHandle?
+    
+    let appDelegate = UIApplication.shared.delegate as! AppDelegate
 
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        
+        authListener = Auth.auth().addStateDidChangeListener({ (auth, user) in
+            
+            Auth.auth().removeStateDidChangeListener(self.authListener!)
+            
+            if user != nil {
+                
+                if UserDefaults.standard.object(forKey: kCURRENTUSER) != nil {
+                    
+                    DispatchQueue.main.async {
+                        
+                        self.goToApp()
+                    }
+                }
+            }
+        })
+        
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
@@ -30,6 +51,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func sceneDidBecomeActive(_ scene: UIScene) {
         // Called when the scene has moved from an inactive state to an active state.
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
+        
+        appDelegate.locationManagerStart()
     }
 
     func sceneWillResignActive(_ scene: UIScene) {
@@ -46,6 +69,20 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Called as the scene transitions from the foreground to the background.
         // Use this method to save data, release shared resources, and store enough scene-specific state information
         // to restore the scene back to its current state.
+        
+        appDelegate.locationManagerStop()
+    }
+    
+    
+    //MARK: goToApp
+    
+    func goToApp() {
+        
+        NotificationCenter.default.post(name: NSNotification.Name(rawValue: USER_DID_LOGIN_NOTIFICATION), object: nil, userInfo: [kUSERID : FUser.currentId()])
+        
+        let mainView = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "mainApplication") as! UITabBarController
+        
+        self.window?.rootViewController = mainView
     }
 
 

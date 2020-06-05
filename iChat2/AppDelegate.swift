@@ -7,15 +7,32 @@
 //
 
 import UIKit
+import Firebase
+import CoreLocation
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, CLLocationManagerDelegate {
 
+    
+    var locationManager: CLLocationManager?
+    var coordinates: CLLocationCoordinate2D?
 
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        
+        FirebaseApp.configure()
+        
         return true
+    }
+    
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        
+        locationManagerStart()
+    }
+    
+    func applicationDidEnterBackground(_ application: UIApplication) {
+        
+        locationManagerStop()
     }
 
     // MARK: UISceneSession Lifecycle
@@ -32,6 +49,58 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Use this method to release any resources that were specific to the discarded scenes, as they will not return.
     }
 
+    
+    //MARK: Location Manager
+    
+    func locationManagerStart() {
+        
+        if locationManager == nil {
+            locationManager = CLLocationManager()
+            locationManager!.delegate = self
+            locationManager!.desiredAccuracy = kCLLocationAccuracyBest
+            locationManager!.requestWhenInUseAuthorization()
+        }
+        
+        locationManager!.startUpdatingLocation()
+    }
+    
+    func locationManagerStop() {
+        
+        if locationManager != nil {
+            locationManager!.stopUpdatingLocation()
+        }
+    }
+    
+    
+    //MARK: Location Manager Delegate
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        
+        print("faild to get location")
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+        
+        switch status {
+        case .notDetermined:
+            manager.requestWhenInUseAuthorization()
+        case .authorizedWhenInUse:
+            manager.startUpdatingLocation()
+        case .authorizedAlways:
+            manager.startUpdatingLocation()
+        case .restricted:
+            print("restricted")
+        case .denied:
+            locationManager = nil
+            print("denied location access")
+            break
+        }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        
+        coordinates = locations.last!.coordinate
+    }
 
 }
 
